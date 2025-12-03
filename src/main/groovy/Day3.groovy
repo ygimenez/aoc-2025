@@ -16,7 +16,7 @@ println input
 					}
 				}
 
-				throw "Reached end of input" as Throwable
+				throw 'Reached end of input' as Throwable
 			}.join() as long
 		}
 		.sum()
