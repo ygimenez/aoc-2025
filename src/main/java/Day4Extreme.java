@@ -3,26 +3,31 @@ int BLANK_CODE = '.';
 boolean COUNT_ONLY = false;
 
 void main() throws IOException, URISyntaxException {
-	int warm = 0;
-	while (warm++ < 100) {
-		System.out.println("Warmup(" + warm + "): " + task());
-	}
-
-	long time = System.currentTimeMillis();
-	int res = task();
-	System.out.println("Result: " + res);
-	System.out.println("Time: " + (System.currentTimeMillis() - time) + "ms");
-}
-
-int task() throws URISyntaxException, IOException {
 	List<String> input = Files.readAllLines(Path.of(getClass().getResource("/day4.txt").toURI()));
 	int[] chars = String.join("", input).chars().toArray();
 	int[] mat = IntStream.range(0, chars.length)
 			.map(i -> (i << 8) | chars[i])
 			.toArray();
 
+	int cols = input.getFirst().length();
+
+	int warm = 0;
+	while (warm++ < 1000) {
+		System.out.println("Warmup(" + warm + "): " + task(mat, cols));
+	}
+
+	long time = System.currentTimeMillis();
+	int res = task(mat, cols);
+	System.out.println("Result: " + res);
+	System.out.println("Time: " + (System.currentTimeMillis() - time) + "ms");
+}
+
+int task(int[] input, int cols) {
+	int[] mat = new int[input.length];
+	System.arraycopy(input, 0, mat, 0, input.length);
+
 	int[] nearby = new int[8], changed = new int[0];
-	int changedSize = 0, rm = 0, cols = input.getFirst().length();
+	int changedSize = 0, rm = 0;
 
 	boolean loop = true;
 	while (loop) {
