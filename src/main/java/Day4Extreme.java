@@ -1,6 +1,9 @@
-int CHR_CODE = '@';
-int BLANK_CODE = '.';
-boolean COUNT_ONLY = false;
+static final int CHR_CODE = '@';
+static final int BLANK_CODE = '.';
+static final int EXIT_CODE = 0xFF;
+static final boolean COUNT_ONLY = false;
+static final int[] clear = new int[8];
+static int[] nearby = new int[8];
 
 void main() throws IOException, URISyntaxException {
 	List<String> input = Files.readAllLines(Path.of(getClass().getResource("/day4.txt").toURI()));
@@ -26,34 +29,34 @@ int task(int[] input, int cols) {
 	int[] mat = new int[input.length];
 	System.arraycopy(input, 0, mat, 0, input.length);
 
-	int[] nearby = new int[8], changed = new int[0];
-	int changedSize = 0, rm = 0;
+	int[] changed = null;
+	int changedSize, rm = 0;
+
+	final int rows = input.length / cols; // precompute once
 
 	boolean loop = true;
 	while (loop) {
 		loop = false;
 
-		final int[] scan = changedSize == 0 ? mat : changed;
-		changed = new int[0];
+		final int[] scan = changed == null ? mat : changed;
+		changed = null;
 		changedSize = 0;
 
-		for (int i : scan) {
-			final int idx = i >> 8;
-			final int chr = i & 0xFF;
+		final int scanLength = scan.length;
+		//noinspection ForLoopReplaceableByForEach
+		for (int i = 0; i < scanLength; i++) {
+			final int v = scan[i];
+			final int idx = v >> 8;
+			final int chr = v & 0xFF;
 
-			if (chr == CHR_CODE) {
+			if (chr == EXIT_CODE) break;
+			else if (chr == CHR_CODE) {
 				if (scan != mat) {
 					if ((mat[idx] & 0xFF) != CHR_CODE) continue;
 				}
 
-				getNearby(mat, idx, cols, nearby);
 
-				int count = 0;
-				for (int j = 0; j < nearby.length && count < 4; j++) {
-					if ((nearby[j] & 0xFF) == CHR_CODE) {
-						count++;
-					}
-				}
+				int count = fillNearbyAndCount(mat, idx, cols, rows);
 
 				if (count != 4) {
 					rm++;
@@ -63,15 +66,15 @@ int task(int[] input, int cols) {
 						loop = true;
 
 						if (changedSize == 0) {
-							changed = new int[8];
-						} else if (changed.length == changedSize) {
-							final int[] aux = new int[changedSize * 2];
+							changed = new int[9];
+						} else if (changed.length == changedSize + 1) {
+							final int[] aux = new int[changedSize * 2 + 1];
 							System.arraycopy(changed, 0, aux, 0, changed.length);
 							changed = aux;
 						}
 
 						System.arraycopy(nearby, 0, changed, changedSize, nearby.length);
-						changedSize += 8;
+						changed[changedSize += 8] = EXIT_CODE;
 					}
 				}
 			}
@@ -81,19 +84,48 @@ int task(int[] input, int cols) {
 	return rm;
 }
 
-static void getNearby(int[] input, int idx, int cols, int[] out) {
+static int fillNearbyAndCount(int[] input, int idx, int cols, int rows) {
+	int count = 0;
+
 	final int x = idx % cols;
 	final int y = idx / cols;
-	final int rows = input.length / cols;
 
-	out[0] = (y > 0 && x > 0) ? input[cols * (y - 1) + (x - 1)] : 0;
-	out[1] = (y > 0) ? input[cols * (y - 1) + x] : 0;
-	out[2] = (y > 0 && x < cols - 1) ? input[cols * (y - 1) + (x + 1)] : 0;
+	// above row
+	if (y > 0) {
+		int base = cols * (y - 1);
+		int v0 = (x > 0) ? input[base + (x - 1)] : 0;
+		int v1 = input[base + x];
+		int v2 = (x < cols - 1) ? input[base + (x + 1)] : 0;
+		nearby[0] = v0; count += ((v0 & 0xFF) == CHR_CODE) ? 1 : 0;
+		nearby[1] = v1; count += ((v1 & 0xFF) == CHR_CODE) ? 1 : 0;
+		nearby[2] = v2; count += ((v2 & 0xFF) == CHR_CODE) ? 1 : 0;
+	} else {
+		nearby[0] = 0;
+		nearby[1] = 0;
+		nearby[2] = 0;
+	}
 
-	out[3] = (x > 0) ? input[cols * y + (x - 1)] : 0;
-	out[4] = (x < cols - 1) ? input[cols * y + (x + 1)] : 0;
+	// same row
+	int baseMid = cols * y;
+	int v3 = (x > 0) ? input[baseMid + (x - 1)] : 0;
+	int v4 = (x < cols - 1) ? input[baseMid + (x + 1)] : 0;
+	nearby[3] = v3; count += ((v3 & 0xFF) == CHR_CODE) ? 1 : 0;
+	nearby[4] = v4; count += ((v4 & 0xFF) == CHR_CODE) ? 1 : 0;
 
-	out[5] = (y < rows - 1 && x > 0) ? input[cols * (y + 1) + (x - 1)] : 0;
-	out[6] = (y < rows - 1) ? input[cols * (y + 1) + x] : 0;
-	out[7] = (y < rows - 1 && x < cols - 1) ? input[cols * (y + 1) + (x + 1)] : 0;
+	// below row
+	if (y < rows - 1) {
+		int base = cols * (y + 1);
+		int v5 = (x > 0) ? input[base + (x - 1)] : 0;
+		int v6 = input[base + x];
+		int v7 = (x < cols - 1) ? input[base + (x + 1)] : 0;
+		nearby[5] = v5; count += ((v5 & 0xFF) == CHR_CODE) ? 1 : 0;
+		nearby[6] = v6; count += ((v6 & 0xFF) == CHR_CODE) ? 1 : 0;
+		nearby[7] = v7; count += ((v7 & 0xFF) == CHR_CODE) ? 1 : 0;
+	} else {
+		nearby[5] = 0;
+		nearby[6] = 0;
+		nearby[7] = 0;
+	}
+
+	return count;
 }
