@@ -1,3 +1,5 @@
+static final long[] clear = new long[3];
+
 void main() throws URISyntaxException, IOException {
 	List<String> input = Files.readAllLines(Path.of(getClass().getResource("/day5.txt").toURI()));
 
@@ -15,25 +17,41 @@ void main() throws URISyntaxException, IOException {
 }
 
 long[] task(List<String> input) {
-	var list = new ArrayList<long[]>();
+	long[][] ranges = null;
+	int rangesSize = 0;
 
 	boolean counting = false;
-	for (String s : input) {
+	//noinspection ForLoopReplaceableByForEach
+	for (int j = 0, inputSize = input.size(); j < inputSize; j++) {
+		String s = input.get(j);
 		if (!counting) {
 			if (s.isBlank()) {
-				optimizeRanges(list);
+				optimizeRanges(ranges);
 				counting = true;
 				continue;
 			}
 
 			long[] entry = new long[3];
 			System.arraycopy(Arrays.stream(s.split("-")).mapToLong(Long::parseLong).toArray(), 0, entry, 0, 2);
-			list.add(entry);
+
+			if (rangesSize == 0) {
+				ranges = new long[4][];
+			} else if (ranges.length == rangesSize) {
+				final long[][] aux = new long[rangesSize * 2][];
+				System.arraycopy(ranges, 0, aux, 0, ranges.length);
+				ranges = aux;
+			}
+
+			ranges[rangesSize++] = entry;
 			continue;
 		}
 
 		long val = Long.parseLong(s);
-		for (long[] r : list) {
+		for (int i = 0; i < rangesSize; i++) {
+			long[] r = ranges[i];
+			if (r == null) break;
+			if (r == clear) continue;
+
 			if (val >= r[0] && val <= r[1]) {
 				r[2] += 1;
 				break;
@@ -42,30 +60,34 @@ long[] task(List<String> input) {
 	}
 
 	long[] out = new long[2];
-	for (long[] v : list) {
-		out[0] += v[2];
-		out[1] += v[1] - v[0] + 1;
+	for (int i = 0; i < rangesSize; i++) {
+		long[] r = ranges[i];
+		if (r == null) break;
+		if (r == clear) continue;
+
+		out[0] += r[2];
+		out[1] += r[1] - r[0] + 1;
 	}
 
 	return out;
 }
 
-void optimizeRanges(List<long[]> ranges) {
-	int rangesSize = ranges.size();
-	ranges.sort(Comparator.comparingLong(r -> r[0]));
+void optimizeRanges(long[][] ranges) {
+	Arrays.sort(ranges, Comparator.comparingLong(r -> r == null ? Long.MAX_VALUE : r[0]));
+	final int rangesSize = ranges.length;
 
 	loop:
 	for (int i = 0; i < rangesSize; i++) {
-		long[] r = ranges.get(i);
+		final long[] r = ranges[i];
+		if (r == null) break;
+		if (r == clear) continue;
+
 		for (int j = i + 1; j < rangesSize; j++) {
-			var other = ranges.get(j);
-			if (r[1] < other[0]) continue loop;
+			final long[] other = ranges[j];
+			if (other == null || r[1] < other[0]) continue loop;
 
 			r[1] = Math.max(r[1], other[1]);
-			ranges.remove(j--);
-			rangesSize--;
+			ranges[j] = clear;
 		}
 	}
-
-	System.out.println(ranges.stream().map(Arrays::toString).toList());
 }
