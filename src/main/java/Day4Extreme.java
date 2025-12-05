@@ -19,10 +19,12 @@ void main() throws IOException, URISyntaxException {
 		System.out.println("Warmup(" + warm + "): " + task(mat, cols));
 	}
 
-	long time = System.currentTimeMillis();
+	long time = System.nanoTime();
 	int res = task(mat, cols);
+	time = System.nanoTime() - time;
+
 	System.out.println("Result: " + res);
-	System.out.println("Time: " + (System.currentTimeMillis() - time) + "ms");
+	System.out.println("Time: " + (time / 1e6) + "ms");
 }
 
 int task(int[] input, int cols) {
