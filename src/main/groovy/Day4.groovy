@@ -1,7 +1,7 @@
 def input = getClass().getResource('/day4.txt').readLines()
 boolean COUNT_ONLY = false
 
-def mat = input.flatten { it.split('') as List<String> } as List<String>
+def mat = input.collectMany { it.split('') as List<String> } as List<String>
 int cols = input.first.length()
 int rows = input.size()
 int total = 0

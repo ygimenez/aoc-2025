@@ -22,7 +22,7 @@ def ranges = input.inject(map) {
 }
 
 def ids = ranges.keySet().toList()
-def merged = new ArrayList<Tuple2<Long, Long>>()
+def merged = [] as List<Tuple2<Long, Long>>
 for (id in ids) {
 	def (aMin, aMax) = id
 
